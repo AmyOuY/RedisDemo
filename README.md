@@ -9,5 +9,5 @@
 <img src="./images/dataFromCache.png">
 
 <hr/>
-<h3>Power Shell commands for using Redis in Docker</h3>
+<h3>PowerShell commands for using Redis in Docker</h3>
 <img src="./images/redisPowershell.png">
