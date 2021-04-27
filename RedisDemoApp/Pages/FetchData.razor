@@ -1,0 +1,78 @@
+﻿@page "/fetchdata"
+
+@using RedisDemoApp.Data
+@using RedisDemoApp.RedisExtensions
+@inject WeatherForecastService ForecastService
+@inject IDistributedCache cache 
+
+
+<h1>Weather forecast</h1>
+
+<p>This component demonstrates fetching data using cache.</p>
+<button class="btn btn-info" @onclick="LoadForeCast">Load Weather Forecast</button>
+
+@if (dataFrom == "")
+{
+    <p><em>Please click the button to load weather forecast</em></p>
+}
+else if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="h4 @fromCache">@dataFrom</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private WeatherForecast[] forecasts;
+    private string dataFrom = "";
+    private string fromCache = "";
+
+    private async Task LoadForeCast()
+    {
+        forecasts = null;
+        dataFrom = null;
+
+        string id = "weather_" + DateTime.Now.ToString("yyyyMMdd_hhmm");
+
+        // Priority place to get data is from cache then from database  
+        forecasts = await cache.GetEntryAsync<WeatherForecast[]>(id);
+
+        // Data not in cache, so get it from database and then store a copy in cache
+        if (forecasts is null)
+        {
+            forecasts = await ForecastService.GetForecastAsync(DateTime.Now);
+            dataFrom = $"Data loaded from API at { DateTime.Now }";
+            fromCache = "";
+
+            await cache.SetEntryAsync(id, forecasts);
+        }
+        else
+        {
+            dataFrom = $"Data loaded from cache at { DateTime.Now }";
+            fromCache = "text-success";
+        }
+    }
+}
